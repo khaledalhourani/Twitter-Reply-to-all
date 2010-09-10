@@ -7,7 +7,7 @@
 // @include       https://twitter.com*
 // @include       https://www.twitter.com*
 // @require       http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js
-// @version       1.4
+// @version       1.5
 // ==/UserScript==
 
 
@@ -42,13 +42,22 @@ function getTweeps(status, sep) {
   if (status.hasClass('mine')) {
     return 0;
   }
-  var my_username = $('#profile #me_name').text();
 
-  var username = status.find('a.screen-name').text();
-  if (!status.find('a.screen-name').exists() && $('.status .user-info a.screen-name').exists()) {
-    username = $('.status .user-info a.screen-name').text();
+  var my_username = $('meta[name=session-user-screen_name]').attr("content");
+  var username = '';
+  var tweeps = '';
+  
+  if (status.find('a.screen-name').exists()) {
+    username = status.find('a.screen-name').text();
+  } else {
+    if ($('.status .user-info a.screen-name').exists()) {
+      username = $('.status .user-info a.screen-name').text();
+    }
   }
-  var tweeps = '@' + username;
+
+  if (username != '') {
+    tweeps = '@' + username;
+  }
 
   status.find('.entry-content a.username').each(function() {
     var tweep = $(this).text();
@@ -60,17 +69,22 @@ function getTweeps(status, sep) {
   return tweeps;
 }
 
-function replyToAllHtml() {
-  $('#timeline.statuses .hentry.status, #show .hentry.status').each(function() {
+
+function replyToAllHtml(selector) {
+  $(selector).each(function() {
     if (!$(this).find('.reply_to_all').exists()) {
       var status = $(this);
       var status_id = status.attr('id').replace(/status_/,"");
-      var username = status.find('a.screen-name').text();
+      var username = '';
 
-      if (!status.find('a.screen-name').exists() && $('.status .user-info a.screen-name').exists()) {
-	username = $('.status .user-info a.screen-name').text();
+      if (status.find('a.screen-name').exists()) {
+	username = status.find('a.screen-name').text();
+      } else {
+	if ($('.status .user-info a.screen-name').exists()) {
+	  username = $('.status .user-info a.screen-name').text();
+	}
       }
-      
+
       var tweeps = getTweeps(status, '+');
       if (!tweeps) {
 	return;
@@ -80,12 +94,14 @@ function replyToAllHtml() {
 
       status.find('.actions-hover').prepend(reply_to_all_html);
     }
+
+    $(this).die('mouseover');
   });
 }
 
 
 function init() {
-  replyToAllHtml();
+  replyToAllHtml('#timeline.statuses .hentry.status, #show .hentry.status');
 
   $(".reply_to_all").live("click",function(event) {
     event.preventDefault();
@@ -118,6 +134,26 @@ function init() {
     window.scroll(0,0);
     return false;
   },this);
+
+  // The new tweets link that appears when new tweets available
+  // here we need only live click event on that link
+  // because all new tweets are here but are hidden
+  // and click the link displays them
+  $('#results_update').live('click', function() {
+    replyToAllHtml('#timeline.statuses .hentry.status');
+  });
+
+  // We can't do the same for more link that appears on the bottom to load more tweet,
+  // the same as new tweets above, because more link brings the older tweets by ajax call
+  // so the only possible way I found (if you find better one tell me please)
+  // is to bind a live hover event on the new tweets to insert reply_to_all tag
+  // then call die() on the tweet after inserting the tag for performance
+  $('.hentry.status').live('mouseover', function() {
+    if (!$(this).find('.reply_to_all').exists() && !$(this).hasClass('mine')) {
+      var id = '#' + $(this).attr('id');
+      replyToAllHtml(id);
+    }
+  });
 }
 
 
