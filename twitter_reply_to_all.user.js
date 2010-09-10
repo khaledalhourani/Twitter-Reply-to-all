@@ -7,7 +7,7 @@
 // @include       https://twitter.com*
 // @include       https://www.twitter.com*
 // @require       http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js
-// @version       1.2
+// @version       1.3
 // ==/UserScript==
 
 
@@ -39,8 +39,16 @@ $.fn.exists = function() {
 
 
 function getTweeps(status, sep) {
+  if (status.hasClass('mine')) {
+    return 0;
+  }
+
   var username = status.find('a.screen-name').text();
-  var my_username = $('#profile #me_name').text();
+  if (!status.find('a.screen-name').exists() && $('.status .user-info a.screen-name').exists()) {
+    username = $('.status .user-info a.screen-name').text();
+  }
+
+  var my_username = $('#profile_link #me_name').text();
   var tweeps = '@' + username;
 
   status.find('.entry-content a.username').each(function() {
@@ -54,12 +62,20 @@ function getTweeps(status, sep) {
 }
 
 function replyToAllHtml() {
-  $('#timeline.statuses .status, #show .status').each(function() {
+  $('#timeline.statuses .hentry.status, #show .hentry.status').each(function() {
     if (!$(this).find('.reply_to_all').exists()) {
       var status = $(this);
       var status_id = status.attr('id').replace(/status_/,"");
-      var username = status.find('.status-content a.screen-name').text();
+      var username = status.find('a.screen-name').text();
+
+      if (!status.find('a.screen-name').exists() && $('.status .user-info a.screen-name').exists()) {
+	username = $('.status .user-info a.screen-name').text();
+      }
+      
       var tweeps = getTweeps(status, '+');
+      if (!tweeps) {
+	return;
+      }
 
       var reply_to_all_html = '<li><span class="reply_to_all"><span class="reply-to-all-icon icon"></span><a title="reply to all" href="/?status=' + tweeps + '&amp;in_reply_to_status_id=' + status_id + '&amp;in_reply_to=' + username + '">Reply to all</a></span></li>';
 
