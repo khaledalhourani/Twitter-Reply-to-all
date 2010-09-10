@@ -7,7 +7,7 @@
 // @include       https://twitter.com*
 // @include       https://www.twitter.com*
 // @require       http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js
-// @version       1.3
+// @version       1.4
 // ==/UserScript==
 
 
@@ -42,13 +42,12 @@ function getTweeps(status, sep) {
   if (status.hasClass('mine')) {
     return 0;
   }
+  var my_username = $('#profile #me_name').text();
 
   var username = status.find('a.screen-name').text();
   if (!status.find('a.screen-name').exists() && $('.status .user-info a.screen-name').exists()) {
     username = $('.status .user-info a.screen-name').text();
   }
-
-  var my_username = $('#profile_link #me_name').text();
   var tweeps = '@' + username;
 
   status.find('.entry-content a.username').each(function() {
